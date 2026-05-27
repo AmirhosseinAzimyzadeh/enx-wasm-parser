@@ -2,7 +2,7 @@
   "name": "enx-wasm-parser",
   "version": "0.1.0",
   "description": "Parse Teledyne RDI PD0/ENX acoustic data files via Rust/WebAssembly, off the main thread",
-  "author": "Amir Azimi <amir.az@unb.ca>",
+  "author": "Amir Azimyzadeh <amir.az@unb.ca>",
   "repository": {
     "type": "git",
     "url": "https://github.com/AmirhosseinAzimyzadeh/enx-wasm-parser.git"
