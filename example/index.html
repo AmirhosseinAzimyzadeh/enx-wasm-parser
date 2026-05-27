@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>enx-wasm-parser demo</title>
+  <style>
+    body { font-family: monospace; padding: 2rem; background: #111; color: #eee; }
+    h1 { color: #7cf; }
+    label { display: block; margin: 1rem 0 .25rem; }
+    input[type=file] { margin-bottom: 1rem; }
+    input[type=number] { width: 120px; background: #222; color: #eee; border: 1px solid #555; padding: .3rem; }
+    button { margin-top: 1rem; padding: .5rem 1.5rem; background: #7cf; color: #111; border: none; cursor: pointer; font-size: 1rem; }
+    pre { background: #1a1a2e; padding: 1rem; overflow: auto; max-height: 60vh; border: 1px solid #333; }
+    .error { color: #f77; }
+    .meta { color: #afc; }
+  </style>
+</head>
+<body>
+  <h1>enx-wasm-parser demo</h1>
+
+  <label>ENX / PD0 file:
+    <input type="file" id="fileInput" accept=".enx,.pd0,.ens,.sta,.lta" />
+  </label>
+
+  <label>Anchor latitude: <input type="number" id="anchorLat" value="45.27" step="0.0001" /></label>
+  <label>Anchor longitude: <input type="number" id="anchorLon" value="-66.05" step="0.0001" /></label>
+  <label>Output format:
+    <select id="fmt">
+      <option value="json">json</option>
+      <option value="binary">binary</option>
+    </select>
+  </label>
+
+  <button id="parseBtn">Parse file</button>
+
+  <pre id="output">Select a file and click Parse.</pre>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>
