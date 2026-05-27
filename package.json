@@ -5,7 +5,7 @@
   "author": "Amir Azimyzadeh <amir.az@unb.ca>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AmirhosseinAzimyzadeh/enx-wasm-parser.git"
+    "url": "git+https://github.com/AmirhosseinAzimyzadeh/enx-wasm-parser.git"
   },
   "homepage": "https://github.com/AmirhosseinAzimyzadeh/enx-wasm-parser#readme",
   "bugs": {
