@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 description = "Parse Teledyne RDI PD0/ENX acoustic data files via Rust/WebAssembly"
 license = "MIT"
-repository = "https://github.com/your-org/enx-wasm-parser"
+repository = "https://github.com/AmirhosseinAzimyzadeh/enx-wasm-parser"
 
 [lib]
 crate-type = ["cdylib"]

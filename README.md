@@ -200,7 +200,7 @@ Terminates the background Web Worker and rejects any pending `parse()` promises.
 
 ```bash
 # 1. Clone
-git clone https://github.com/your-org/enx-wasm-parser
+git clone https://github.com/AmirhosseinAzimyzadeh/enx-wasm-parser
 cd enx-wasm-parser
 
 # 2. Build the Wasm module
