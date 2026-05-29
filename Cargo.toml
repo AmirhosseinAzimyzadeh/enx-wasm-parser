@@ -1,6 +1,6 @@
 [package]
 name = "enx-wasm-parser"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Parse Teledyne RDI PD0/ENX acoustic data files via Rust/WebAssembly"
 license = "MIT"
@@ -21,3 +21,6 @@ getrandom = { version = "0.2", features = ["js"] }
 opt-level = "z"
 lto = true
 panic = "abort"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

@@ -1,8 +1,4 @@
 /// Top-level ensemble loop and checksum validation.
-///
-/// Scans the input byte slice for ensembles delimited by the 0x7F 0x7F magic.
-/// For each ensemble: validates checksum, dispatches block parsing, assembles PingJson.
-/// Pings without a valid VmDas nav block are silently skipped (no GPS = no position).
 
 use crate::coords::{bin_depth_m, to_cartesian};
 use crate::echo_intensity::EchoIntensityBlock;
@@ -37,19 +33,17 @@ pub fn parse_file(
     let mut pos = 0usize;
 
     while pos + 2 <= data.len() {
-        // Fast-forward to next 0x7F 0x7F if not aligned (shouldn't happen in valid files)
         if data[pos] != 0x7F || data[pos + 1] != 0x7F {
             pos += 1;
             continue;
         }
 
         let header = Header::parse(&data[pos..])?;
-        // bytes_in_ensemble is the count BEFORE the 2-byte checksum; add 2 for the full slice.
         let data_len = header.bytes_in_ensemble as usize;
         let ensemble_len = data_len + 2;
 
         if pos + ensemble_len > data.len() {
-            break; // truncated ensemble at end of file — stop gracefully
+            break;
         }
 
         let ensemble = &data[pos..pos + ensemble_len];
@@ -122,38 +116,34 @@ fn parse_ensemble(
                 }
             }
             0x2000 => {
-                match VmDasNav::parse(block) {
-                    Ok(n) => nav = Some(n),
-                    Err(_) => {} // skip ping if GPS invalid
+                if let Ok(n) = VmDasNav::parse(block) {
+                    nav = Some(n);
                 }
             }
             _ => {}
         }
     }
 
-    // Acoustic blocks are required; GPS is optional (absent in raw PD0 files)
     let (fl, vl, vel, ec) = match (fixed, variable, velocity, echo) {
         (Some(fl), Some(vl), Some(vel), Some(ec)) => (fl, vl, vel, ec),
         _ => return Ok(None),
     };
 
-    let (x, z) = match nav {
+    let (lat, lon, x, z) = match nav {
         Some(n) => {
             let (cx, cz) = to_cartesian(anchor_lat, anchor_lon, n.latitude, n.longitude);
-            (Some(cx as f32), Some(cz as f32))
+            (Some(n.latitude), Some(n.longitude), Some(cx as f32), Some(cz as f32))
         }
         None => {
             *without_gps += 1;
-            (None, None)
+            (None, None, None, None)
         }
     };
 
     let mut bins = Vec::with_capacity(fl.num_cells as usize);
     for i in 0..fl.num_cells as usize {
         match &vel.bins[i] {
-            None => {
-                *dropped += 1;
-            }
+            None => { *dropped += 1; }
             Some(bin) => {
                 let depth = bin_depth_m(
                     fl.blank_distance_cm,
@@ -176,5 +166,5 @@ fn parse_ensemble(
         return Ok(None);
     }
 
-    Ok(Some(PingJson { timestamp: vl.timestamp, x, z, bins }))
+    Ok(Some(PingJson { timestamp: vl.timestamp, lat, lon, x, z, bins }))
 }

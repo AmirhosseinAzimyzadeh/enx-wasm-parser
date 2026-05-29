@@ -11,9 +11,13 @@
     input[type=file] { margin-bottom: 1rem; }
     input[type=number] { width: 120px; background: #222; color: #eee; border: 1px solid #555; padding: .3rem; }
     button { margin-top: 1rem; padding: .5rem 1.5rem; background: #7cf; color: #111; border: none; cursor: pointer; font-size: 1rem; }
+    button:disabled { opacity: .4; cursor: default; }
     pre { background: #1a1a2e; padding: 1rem; overflow: auto; max-height: 60vh; border: 1px solid #333; }
     .error { color: #f77; }
     .meta { color: #afc; }
+    #pingNav { display: none; margin-top: 1rem; align-items: center; gap: .75rem; }
+    #pingNav button { margin-top: 0; }
+    #pingCounter { color: #aaa; font-family: monospace; }
   </style>
 </head>
 <body>
@@ -33,6 +37,12 @@
   </label>
 
   <button id="parseBtn">Parse file</button>
+
+  <div id="pingNav">
+    <button id="prevBtn">&#8592; Prev</button>
+    <span id="pingCounter">ping 1 / 1</span>
+    <button id="nextBtn">Next &#8594;</button>
+  </div>
 
   <pre id="output">Select a file and click Parse.</pre>
 

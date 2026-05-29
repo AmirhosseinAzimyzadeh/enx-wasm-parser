@@ -18,8 +18,10 @@ pub struct BinJson {
 #[derive(Serialize)]
 pub struct PingJson {
     pub timestamp: String,
-    pub x: Option<f32>, // null in JSON when no GPS fix (raw PD0 files)
-    pub z: Option<f32>,
+    pub lat: Option<f64>, // WGS-84 degrees; null when no GPS fix
+    pub lon: Option<f64>,
+    pub x: Option<f32>,  // metres east of anchor
+    pub z: Option<f32>,  // metres north of anchor
     pub bins: Vec<BinJson>,
 }
 

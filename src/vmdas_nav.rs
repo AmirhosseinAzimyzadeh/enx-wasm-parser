@@ -1,25 +1,34 @@
-/// Parses the VmDas Navigation block (ID 0x2000) — 92 bytes.
+/// Parses the VmDas Navigation block (ID 0x2000).
 ///
-/// Extracts high-precision GPS latitude and longitude (i32 × 1e-7 degrees).
-/// Block is only present in ENX/ENS/STA/LTA files. Ping is skipped if absent.
+/// Layout confirmed from dolfyn source (io/rdi.py, `read_vmdas`).
+/// All offsets are from block start (include the 2-byte 0x2000 ID prefix).
+/// Scaling: i32 × (180 / 2³¹)  — NOT × 1e-7.
 ///
-/// Two offset conventions exist in the wild; we validate whichever pair
-/// produces geographically sane values (lat ∈ [-90,90], lon ∈ [-180,180]).
+///  Bytes 00–01: block ID = 0x2000
+///  Bytes 02–05: UTC date (4 × u8: year-2000, month, day, ?)
+///  Bytes 06–09: UTC time of first GPS fix (u32, ×0.1 ms)
+///  Bytes 10–13: PC clock offset from UTC (i32, ms)
+///  Bytes 14–17: latitude  – first GPS fix  (i32, × 180/2³¹ degrees)
+///  Bytes 18–21: longitude – first GPS fix  (i32, × 180/2³¹ degrees)
+///  Bytes 22–25: UTC time of last GPS fix   (u32, ×0.1 ms)
+///  Bytes 26–29: latitude  – last GPS fix   (i32, × 180/2³¹ degrees)  ← primary
+///  Bytes 30–33: longitude – last GPS fix   (i32, × 180/2³¹ degrees)  ← primary
 
 use crate::error::{ParseError, Result};
 
+/// Degrees = raw_i32 × GPS_SCALE
+const GPS_SCALE: f64 = 180.0 / 2_147_483_648.0; // 180 / 2^31
+
 pub struct VmDasNav {
-    /// Decimal degrees, WGS-84.
     pub latitude: f64,
-    /// Decimal degrees, WGS-84.
     pub longitude: f64,
 }
 
 impl VmDasNav {
     pub fn parse(block: &[u8]) -> Result<VmDasNav> {
-        if block.len() < 46 {
+        if block.len() < 34 {
             return Err(ParseError::Fatal(format!(
-                "VmDas nav block too short: {} bytes",
+                "VmDas nav block too short: {} bytes (need 34)",
                 block.len()
             )));
         }
@@ -31,36 +40,36 @@ impl VmDasNav {
             )));
         }
 
-        // Primary layout: lon at bytes 18-21, lat at bytes 22-25
-        let lon_primary = i32::from_le_bytes([block[18], block[19], block[20], block[21]]) as f64 / 1e7;
-        let lat_primary = i32::from_le_bytes([block[22], block[23], block[24], block[25]]) as f64 / 1e7;
+        // Primary: last GPS fix (what dolfyn exposes as latitude_gps / longitude_gps)
+        let lat = read_i32(block, 26) as f64 * GPS_SCALE;
+        let lon = read_i32(block, 30) as f64 * GPS_SCALE;
 
-        if is_valid_lat(lat_primary) && is_valid_lon(lon_primary) {
-            return Ok(VmDasNav { latitude: lat_primary, longitude: lon_primary });
+        if is_valid_coord(lat, 90.0) && is_valid_coord(lon, 180.0) {
+            return Ok(VmDasNav { latitude: lat, longitude: lon });
         }
 
-        // Alternate layout seen in some VmDas firmware: lon at 10-13, lat at 14-17
-        if block.len() >= 18 {
-            let lon_alt = i32::from_le_bytes([block[10], block[11], block[12], block[13]]) as f64 / 1e7;
-            let lat_alt = i32::from_le_bytes([block[14], block[15], block[16], block[17]]) as f64 / 1e7;
-            if is_valid_lat(lat_alt) && is_valid_lon(lon_alt) {
-                return Ok(VmDasNav { latitude: lat_alt, longitude: lon_alt });
-            }
+        // Fallback: first GPS fix (bytes 14–21)
+        let lat1 = read_i32(block, 14) as f64 * GPS_SCALE;
+        let lon1 = read_i32(block, 18) as f64 * GPS_SCALE;
+
+        if is_valid_coord(lat1, 90.0) && is_valid_coord(lon1, 180.0) {
+            return Ok(VmDasNav { latitude: lat1, longitude: lon1 });
         }
 
         Err(ParseError::Fatal(format!(
-            "VmDas nav block contains no valid GPS fix (lat={}, lon={})",
-            lat_primary, lon_primary
+            "VmDas nav block: no valid GPS fix \
+             (last: {:.6},{:.6}  first: {:.6},{:.6})",
+            lat, lon, lat1, lon1
         )))
     }
 }
 
 #[inline]
-fn is_valid_lat(v: f64) -> bool {
-    v >= -90.0 && v <= 90.0 && v != 0.0
+fn read_i32(block: &[u8], off: usize) -> i32 {
+    i32::from_le_bytes([block[off], block[off+1], block[off+2], block[off+3]])
 }
 
 #[inline]
-fn is_valid_lon(v: f64) -> bool {
-    v >= -180.0 && v <= 180.0 && v != 0.0
+fn is_valid_coord(v: f64, limit: f64) -> bool {
+    v > -limit && v < limit && v != 0.0
 }
